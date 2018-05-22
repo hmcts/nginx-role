@@ -1,0 +1,102 @@
+---
+
+- name: "Install Nginx"
+  become: yes
+  yum:
+    pkg: nginx
+    state: installed
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "restart nginx"
+
+- name: "Ensure pid file is not in /var/run/ which SELinux denies access to"
+  become: yes
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: ".*/var/run/nginx.pid.*"
+    line: "# Ansible nginx-role disabled line - /var/run/nginx.pid would be blocked by SELinux"
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "restart nginx"
+
+- name: "add custom http global config"
+  become: yes
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    insertafter: "http {"
+    regexp: "{{ item }}"
+    line: "{{ item }}"
+  with_items: "{{ nginx_custom_http_config }}"
+  when: nginx_custom_http_config is defined
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "reload nginx"
+
+- name: "Enable Nginx"
+  become: yes
+  service:
+    name: nginx
+    enabled: yes
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "restart nginx"
+
+- name: "Ensure cache directory exists"
+  become: yes
+  file:
+    dest: "/var/lib/nginx/cache"
+    state: directory
+    mode: 0775
+    group: nginx
+    owner: nginx
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "restart nginx"
+
+- name: "Configure Nginx"
+  become: yes
+  template:
+    src: "{{ item.template | default('vhost.conf.j2') }}"
+    dest: "{{ nginx_conf_dir }}/{{ item.hostname | replace('.', '_') }}_{{ item.port | default('port')}}.conf"
+    owner: "nginx"
+    group: "nginx"
+  when: nginx is defined
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "reload nginx"
+  with_items:
+    - "{{ nginx }}"
+
+# set up document roots where defined
+- include: "document_root.yml"
+  with_items: "{{ nginx }}"
+  loop_control:
+      loop_var: docroot
+  when: rule.document_root_source is defined and rule.document_root is defined
+
+- include: "vault_get_ssl_files.yml"
+- include: "selinux_exceptions.yml"
+- include: "disable_unwanted_config_files.yml"
+- include: "open_file_limit.yml"
+
+- name: "Force nginx checks"
+  debug:
+    msg: "Forcing nginx checks"
+  notify:
+    - "check nginx config"
+    - "check certs"
+
+- name: "Force handlers to run"
+  meta: flush_handlers
+
+- name: "Ensure nginx is started"
+  become: yes
+  service:
+    name: nginx
+    state: started

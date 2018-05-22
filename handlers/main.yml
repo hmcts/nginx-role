@@ -1,0 +1,34 @@
+---
+- name: Check certificate/key matches
+  become: yes
+  script: certcheck.sh
+  listen: "check certs"
+
+- name: "Check nginx config"
+  become: yes
+  command: nginx -t warn=no
+  listen: "check nginx config"
+
+- name: restart nginx
+  become: yes
+  service:
+    name: nginx
+    state: restarted
+  listen: "restart nginx"
+
+- name: reload nginx
+  become: yes
+  service:
+    name: nginx
+    state: reloaded
+  listen: "reload nginx"
+
+- name: load sysctl settings
+  become: yes
+  command: sysctl -p
+  listen: "load sysctl"
+
+- name: reload nginx systemd unit
+  become: yes
+  command: systemctl daemon-reload
+  listen: "reload nginx systemd unit"

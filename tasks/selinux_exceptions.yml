@@ -1,0 +1,31 @@
+---
+
+- name: "Set found_nginx_ports fact"
+  set_fact:
+    found_nginx_ports: "{{ nginx | select('port') | join(', ') }}"
+
+- block:
+  - name: "Allow nginx to connect to ports"
+    become: yes
+    seboolean:
+      name: httpd_can_network_connect
+      state: yes
+      persistent: yes
+    notify:
+      - "check nginx config"
+      - "check certs"
+      - "restart nginx"
+
+  - name: "Ensure nginx can listen on corrent ports"
+    become: yes
+    seport:
+      ports: "{{ found_nginx_ports }}"
+      proto: tcp
+      setype: http_port_t
+      state: present
+    notify:
+      - "check nginx config"
+      - "check certs"
+      - "restart nginx"
+
+  when: found_nginx_ports != "" and ansible_selinux is defined and ansible_selinux.status is defined and ansible_selinux.status == "enabled"

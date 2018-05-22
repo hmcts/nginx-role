@@ -1,0 +1,104 @@
+---
+
+nginx_custom_http_config:
+  - "server_names_hash_bucket_size 128;"
+
+nginx:
+  - hostname: 'bar.com'
+    health_check_port: 80
+    app_name: 'barcom'
+    rules:
+      - location: /
+        redirect: 'https://aaaa.com'
+  - hostname: 'foo.com'
+    health_check_port: 80
+    app_name: 'foocom'
+    rules:
+      - location: /
+        port: 3000
+  - hostname: 'baz.com'
+    health_check_port: 80
+    app_name: 'bazcom'
+    port: 3213
+    rules:
+      - location: /
+        port: 5000
+  - hostname: 'git.something'
+    port: 8080
+    health_check_port: 8080
+    app_name: 'gitapp1'
+    rules:
+      - location: /
+        port: 8080
+        upstreams:
+          - '192.168.1.1'
+  - hostname: 'git.something'
+    port: 80
+    app_name: 'gitapp2'
+    rules:
+      - location: /
+        port: 443
+        scheme: https
+        upstreams:
+          - '192.168.1.1'
+  - hostname: 'two.backends'
+    port: 8080
+    health_check_port: 8080
+    app_name: 'two.backends'
+    rules:
+      - location: /
+        port: 8080
+        upstreams:
+          - '127.0.0.1'
+          - '127.0.0.2'
+  - hostname: 'localhost'
+    port: "3003"
+    aliases:
+      - '*.local'
+    app_name: 'localhost'
+    rules:
+      - location: /
+        downstream: "localhost:6301"
+  - hostname: 'ssltest.something'
+    port: 443
+    ssl_enabled: true
+    app_name: 'ssl.derp_443'
+    rules:
+      - location: /
+        port: 443
+        scheme: https
+        upstreams:
+          - '192.168.0.1'
+  - hostname: 'alsossl.something'
+    port: 443
+    ssl_enabled: true
+    app_name: 'ssl.herp_443'
+    rewrite: false
+    rules:
+      - location: /
+        port: 443
+        scheme: https
+        upstreams:
+          - '192.168.0.1'
+  - hostname: 'rewrite.example.com'
+    app_name: rewrite_example
+    rules:
+      - location: /path1
+        port: 3000
+        rewrite_to: /
+      - location: /path2
+        port: 3001
+        rewrite_to: /
+  - hostname: 'static'
+    port: 80
+    app_name: 'static'
+    rules:
+      - location: /
+        document_root: static_docs
+        document_root_source: files/an_example_docroot
+  - hostname: 'preexistingdocroottest'
+    port: 80
+    app_name: 'preexistingdocroottest'
+    rules:
+      - location: /
+        document_root: /usr/share/nginx/html

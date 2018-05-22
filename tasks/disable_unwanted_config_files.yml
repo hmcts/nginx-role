@@ -1,0 +1,38 @@
+---
+- name: "List existing config files in {{ nginx_conf_dir }}"
+  find:
+    paths: "{{ nginx_conf_dir }}"
+    patterns: "*.conf"
+  register: existing_config_files
+
+- name: "Turn existing config files into a fact/list"
+  set_fact:
+    existing_config_files_list: "{{ existing_config_files.files | map(attribute='path') | list }}"
+
+
+- name: "Gather desired_hostnames_and_ports"
+  debug:
+    msg: "{{ item.hostname | replace('.', '_') }}_{{ item.port | default('port') }}.conf"
+  with_items:
+    - "{{ nginx }}"
+  register: desired_hostnames_and_ports
+
+- name: "Turn desired_hostnames_and_ports into a fact/list"
+  set_fact:
+    desired_hostnames_and_ports_list: "{{ desired_hostnames_and_ports.results | map(attribute='msg') | list }}"
+
+
+# Note: previously this deleted files,
+# changed it to empty the files so that any yum updates do not replace the files
+# e.g. default nginx config files
+- name: "Wipe/clear config files that aren't required"
+  become: yes
+  copy:
+    content: "# File cleared by Ansible"
+    dest: "{{ item }}"
+  with_items:
+    - "{{ existing_config_files_list }}"
+  when: item | basename not in desired_hostnames_and_ports_list
+  notify:
+    - "check nginx config"
+    - "reload nginx"

@@ -1,0 +1,37 @@
+---
+
+- name: "Ensure SSL directory exists"
+  become: yes
+  file:
+    dest: "/etc/nginx/ssl"
+    state: directory
+    mode: 0775
+    group: nginx
+    owner: nginx
+
+- name: "Get SSL crt files from vault"
+  become: yes
+  copy:
+    dest: "/etc/nginx/ssl/{{ item.hostname | replace('.','_')}}.crt"
+    content: "{{ lookup('hashi_vault', 'secret=secret/'+item.ssl_certificate_crt_vault_location+':value')| replace('\\n', '\n') }}"
+  when: nginx is defined and item.ssl_certificate_crt_vault_location is defined
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "restart nginx"
+  with_items:
+    - "{{ nginx }}"
+
+- name: "Get SSL key files from vault"
+  become: yes
+  copy:
+    dest: "/etc/nginx/ssl/{{ item.hostname | replace('.','_')}}.key"
+    content: "{{ lookup('hashi_vault', 'secret=secret/'+item.ssl_certificate_key_vault_location+':value')| replace('\\n', '\n') }}"
+  no_log: true
+  when: nginx is defined and item.ssl_certificate_key_vault_location is defined
+  notify:
+    - "check nginx config"
+    - "check certs"
+    - "restart nginx"
+  with_items:
+    - "{{ nginx }}"

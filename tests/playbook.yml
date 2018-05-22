@@ -1,0 +1,50 @@
+---
+
+- hosts: all
+  gather_facts: true
+  tasks:
+    - name: Include vars
+      include_vars: "vars.yml"
+    - name: Install openssl
+      yum:
+        name: openssl
+        state: present
+    - name: Add test certificate
+      command: "openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /ssltest.key -out  /ssltest.crt -subj /CN=nginxtest.local -days 3650"
+      args:
+        creates: "/ssltest.*"
+    - name: slurp certificate
+      slurp:
+        src: /ssltest.crt
+      register: crtslurp
+    - name: slurp key
+      slurp:
+        src: /ssltest.key
+      register: keyslurp
+
+- hosts: all
+  gather_facts: true
+  vars:
+    test_ssl_crt: "{{ crtslurp['content'] | b64decode }}"
+    test_ssl_key: "{{ keyslurp['content'] | b64decode }}"
+  pre_tasks:
+    - name: "Ensure SSL directory exists"
+      become: yes
+      file:
+        dest: "/etc/nginx/ssl"
+        state: directory
+    - name: "Stamp out crt files"
+      copy:
+        dest: "/etc/nginx/ssl/{{ item.hostname | replace('.','_')}}.crt"
+        content: "{{ test_ssl_crt }}"
+      with_items:
+        - "{{ nginx }}"
+    - name: "Stamp out key files"
+      copy:
+        dest: "/etc/nginx/ssl/{{ item.hostname | replace('.','_')}}.key"
+        content: "{{ test_ssl_key }}"
+      with_items:
+        - "{{ nginx }}"
+      notify: "check certs"
+  roles:
+    - role: nginx-role

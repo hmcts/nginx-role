@@ -1,0 +1,11 @@
+---
+
+- name: "Copy over document root files if needed"
+  copy:
+    src: "{{ rule.document_root_source }}/"
+    dest: "/usr/share/nginx/html/{{ rule.document_root }}/"
+  with_items: "{{ docroot.rules }}"
+  loop_control:
+    loop_var: rule
+  become: yes
+  when: rule.document_root is defined and rule.document_root_source is defined

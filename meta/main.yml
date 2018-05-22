@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: HMCTS Reform programme
+  description: Setup and configure nginx as a reverse proxy in front of webapps
+  company: HMCTS
+  license: MIT
+
+dependencies:
+  - role: devops.repos

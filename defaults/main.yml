@@ -1,0 +1,8 @@
+---
+
+nginx_conf_dir: "/etc/nginx/conf.d"
+nginx_soft_nofile: 1024
+nginx_hard_nofile: 4096
+
+# Use client IP by default rather than XFF header for point of origin.
+nginx_track_xff: false

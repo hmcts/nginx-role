@@ -1,0 +1,26 @@
+---
+- name: "Deprecate pam_limits open file limit for nginx user"
+  template:
+    src: "30-nginx-nofile.conf.j2"
+    dest: /etc/security/limits.d/30-nginx-nofile.conf
+
+- name: "Ensure systemd unit has LimitNOFILE for nginx open files limit"
+  lineinfile:
+    path: /lib/systemd/system/nginx.service
+    group: root
+    owner: root
+    mode: 0644
+    state: present
+    line: "LimitNOFILE={{ nginx_hard_nofile }}"
+    insertafter: '^\[Service\]'
+  notify:
+    - reload nginx systemd unit
+    - restart nginx
+
+- name: Verify revised nginx systemd unit file.
+  command: 'systemd-analyze verify --no-pager nginx.service'
+  become: true
+  changed_when: false
+  notify:
+    - reload nginx systemd unit
+    - restart nginx
