@@ -4,6 +4,10 @@
   set_fact:
     found_nginx_ports: "{{ nginx | select('port') | join(', ') }}"
 
+- name: "Print found_nginx_ports"
+  debug:
+    msg: "{{ found_nginx_ports }}"
+
 - block:
   - name: "Allow nginx to connect to ports"
     become: yes
