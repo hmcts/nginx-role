@@ -1,6 +1,7 @@
 ---
 
 nginx_conf_dir: "/etc/nginx/conf.d"
+nginx_streams_dir: '/etc/nginx/streams.d'
 nginx_soft_nofile: 1024
 nginx_hard_nofile: 4096
 
