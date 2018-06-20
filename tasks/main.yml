@@ -67,6 +67,15 @@
     owner: nginx
     state: directory
 
+- name: "Ensure streams module is loaded into nginx"
+  lineinfile:
+    insertbefore: BOF
+    line: "load_module /usr/lib64/nginx/modules/ngx_stream_module.so;"
+    state: present
+    path: "/etc/nginx/nginx.conf"
+  notify:
+    - "check nginx config"
+
 - name: "Ensure streams config directory is loaded correctly"
   lineinfile:
     insertbefore: "^http {$"
