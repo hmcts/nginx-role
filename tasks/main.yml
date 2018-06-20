@@ -58,17 +58,49 @@
     - "check certs"
     - "restart nginx"
 
-- name: "Configure Nginx"
+- name: "Ensure streams config directory exists"
+  become: yes
+  file:
+    dest: "{{ nginx_streams_dir }}"
+    mode: 0775
+    group: nginx
+    owner: nginx
+    state: directory
+
+- name: "Ensure streams config directory is loaded correctly"
+  lineinfile:
+    insertbefore: "^http {$"
+    line: "include {{ nginx_streams_dir }}/*.conf;"
+    state: present
+    path: "/etc/nginx/nginx.conf"
+  notify:
+    - "check nginx config"
+
+- name: "Configure Nginx vhosts"
   become: yes
   template:
     src: "{{ item.template | default('vhost.conf.j2') }}"
     dest: "{{ nginx_conf_dir }}/{{ item.hostname | replace('.', '_') }}_{{ item.port | default('port')}}.conf"
     owner: "nginx"
     group: "nginx"
-  when: nginx is defined
+  when: nginx is defined and item.type is not defined or (item.type is defined and item.type == 'vhost')
   notify:
     - "check nginx config"
     - "check certs"
+    - "reload nginx"
+  with_items:
+    - "{{ nginx }}"
+
+- name: "Configure Nginx streams"
+  become: yes
+  template:
+    src: "{{ item.template | default('stream.conf.j2') }}"
+    dest: "{{ nginx_streams_dir }}/{{ item.hostname | replace('.', '_') }}_{{ item.port | default('port')}}.conf"
+    owner: "nginx"
+    group: "nginx"
+  when: nginx is defined and item.type is defined and item.type == 'stream'
+  notify:
+    - "check nginx config"
     - "reload nginx"
   with_items:
     - "{{ nginx }}"

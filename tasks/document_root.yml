@@ -8,4 +8,4 @@
   loop_control:
     loop_var: rule
   become: yes
-  when: rule.document_root is defined and rule.document_root_source is defined
+  when: docroot.rules is defined and rule.document_root is defined and rule.document_root_source is defined

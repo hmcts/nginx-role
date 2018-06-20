@@ -5,10 +5,14 @@
   tasks:
     - name: Include vars
       include_vars: "vars.yml"
+    - name: Test network connectivity
+      command: ping -t 5 -c 1 proxyout.reform.hmcts.net
+      changed_when: false
     - name: Install openssl
       yum:
         name: openssl
         state: present
+        update_cache: yes
     - name: Add test certificate
       command: "openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /ssltest.key -out  /ssltest.crt -subj /CN=nginxtest.local -days 3650"
       args:

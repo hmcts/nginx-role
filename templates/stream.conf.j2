@@ -1,0 +1,18 @@
+stream {
+  server {
+    listen {{ item.port }};
+
+    {% if item.upstreams is defined %}
+       proxy_pass {{ item.app_name | replace('.', '_') }}_upstreams;
+    {% endif %}
+  }
+
+  # upstreams if needed
+  {% if item.upstreams is defined %}
+  upstream {{ item.app_name | replace('.', '_') }}_upstreams {
+  {% for upstream in item.upstreams %}
+    server {{ upstream.host }}:{{ upstream.port }};
+  {% endfor %}
+  }
+  {% endif %}
+}

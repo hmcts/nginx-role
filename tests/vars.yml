@@ -98,7 +98,16 @@ nginx:
         document_root_source: files/an_example_docroot
   - hostname: 'preexistingdocroottest'
     port: 80
+    type: 'vhost'
     app_name: 'preexistingdocroottest'
     rules:
       - location: /
         document_root: /usr/share/nginx/html
+  - hostname: 'example.com'
+    port: 50080
+    type: 'stream'
+    app_name: 'example_stream_rule'
+    template: 'stream.conf.j2'
+    upstreams:
+      - host: 'example.com'
+        port: 58080
