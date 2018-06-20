@@ -58,33 +58,6 @@
     - "check certs"
     - "restart nginx"
 
-- name: "Ensure streams config directory exists"
-  become: yes
-  file:
-    dest: "{{ nginx_streams_dir }}"
-    mode: 0775
-    group: nginx
-    owner: nginx
-    state: directory
-
-- name: "Ensure streams module is loaded into nginx"
-  lineinfile:
-    insertbefore: BOF
-    line: "include /usr/share/nginx/modules/mod-stream.conf;"
-    state: present
-    path: "/etc/nginx/nginx.conf"
-  notify:
-    - "check nginx config"
-
-- name: "Ensure streams config directory is loaded correctly"
-  lineinfile:
-    insertbefore: "^http {$"
-    line: "include {{ nginx_streams_dir }}/*.conf;"
-    state: present
-    path: "/etc/nginx/nginx.conf"
-  notify:
-    - "check nginx config"
-
 - name: "Configure Nginx vhosts"
   become: yes
   template:
@@ -100,20 +73,6 @@
   with_items:
     - "{{ nginx }}"
 
-- name: "Configure Nginx streams"
-  become: yes
-  template:
-    src: "{{ item.template | default('stream.conf.j2') }}"
-    dest: "{{ nginx_streams_dir }}/{{ item.hostname | replace('.', '_') }}_{{ item.port | default('port')}}.conf"
-    owner: "nginx"
-    group: "nginx"
-  when: nginx is defined and item.type is defined and item.type == 'stream'
-  notify:
-    - "check nginx config"
-    - "reload nginx"
-  with_items:
-    - "{{ nginx }}"
-
 # set up document roots where defined
 - include: "document_root.yml"
   with_items: "{{ nginx }}"
@@ -121,6 +80,17 @@
       loop_var: docroot
   when: rule.document_root_source is defined and rule.document_root is defined
 
+# We don't fully manage nginx.conf, so molecule tests differ from prod in
+# respect of this line being present/absent. This is primarily for molecule.
+- name: Remove default line that includes all modules.
+  lineinfile:
+    line: "include /usr/share/nginx/modules/*.conf;"
+    state: absent
+    path: "/etc/nginx/nginx.conf"
+  notify:
+    - "check nginx config"
+
+- include: "streams.yml"
 - include: "vault_get_ssl_files.yml"
 - include: "selinux_exceptions.yml"
 - include: "disable_unwanted_config_files.yml"
