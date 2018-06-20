@@ -70,7 +70,7 @@
 - name: "Ensure streams module is loaded into nginx"
   lineinfile:
     insertbefore: BOF
-    line: "load_module /usr/lib64/nginx/modules/ngx_stream_module.so;"
+    line: "include /usr/share/nginx/modules/mod-stream.conf;"
     state: present
     path: "/etc/nginx/nginx.conf"
   notify:
