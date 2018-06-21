@@ -7,3 +7,7 @@ nginx_hard_nofile: 4096
 
 # Use client IP by default rather than XFF header for point of origin.
 nginx_track_xff: false
+
+nginx_module_loader_path: "/usr/share/nginx/modules"
+nginx_enabled_modules:
+  - stream
