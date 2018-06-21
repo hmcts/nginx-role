@@ -1,0 +1,56 @@
+# Molecule image conf differing from live conf necessitates this.
+- name: Check for pre-existing module loader line elsewhere in nginx config.
+  command: grep -Fxq "include {{ nginx_module_loader_path }}/*.conf;" /etc/nginx/nginx.conf
+  register: check_existing_module_loader
+  changed_when: false
+  ignore_errors: yes
+
+- name: Ensure nginx module loader lines is correctly placed in main config.
+  lineinfile:
+    state: present
+    path: "/etc/nginx/nginx.conf"
+    insertbefore: "^events {$"
+    line: "include {{ nginx_module_loader_path }}/*.conf;"
+  notify:
+    - "check nginx config"
+  when: check_existing_module_loader.rc != 0
+
+- name: "Make sure any modules we do want are enabled"
+  file:
+    path: "{{ nginx_module_loader_path }}/mod-{{ item }}.conf"
+    content: 'load_module "/usr/lib64/nginx/modules/ngx_{{ item }}_module.so";'
+    owner: root
+    group: root
+    mode: 0644
+  with_items: "{{ nginx_enabled_modules }}"
+
+- name: "Load directory list of all module enabler files"
+  find:
+    paths: "{{ nginx_module_loader_path }}"
+    patterns: "*.conf"
+  register: existing_module_loader_files
+
+- name: "Turn existing module loader files to a fact"
+  set_fact:
+    existing_module_loader_files_list: "{{ existing_module_loader_files.files | map(attribute='path') | list }}"
+
+- name: "Map list of required modules to fact of associated filenames"
+  set_fact:
+    required_module_loader_files_list: "{{ nginx_enabled_modules | map('regex_replace', '^(.*)$', 'mod-\\1.conf') | list }}"
+
+#- name: "Debug list of existing required module files"
+#  debug: var=existing_module_loader_files_list
+#
+#- name: "Debug list of required module files"
+#  debug: var=required_module_loader_files_list
+#
+- name: "Remove/blank any module loader files that we are not using"
+  become: yes
+  copy:
+    content: "# File cleared by ansible"
+    dest: "{{ item }}"
+  with_items: "{{ existing_module_loader_files_list }}"
+  when: item | basename not in required_module_loader_files_list
+  notify:
+    - "check nginx config"
+    - "reload nginx"

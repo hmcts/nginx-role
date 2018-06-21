@@ -9,25 +9,6 @@
     owner: nginx
     state: directory
 
-# We don't fully manage nginx.conf, so molecule tests differ from prod in
-# respect of this line being present/absent. This is primarily for molecule.
-- name: Remove default line that includes all modules.
-  lineinfile:
-    line: "include /usr/share/nginx/modules/*.conf;"
-    state: absent
-    path: "/etc/nginx/nginx.conf"
-  notify:
-    - "check nginx config"
-
-- name: "Ensure streams module is loaded into nginx"
-  lineinfile:
-    insertbefore: BOF
-    line: "include /usr/share/nginx/modules/mod-stream.conf;"
-    state: present
-    path: "/etc/nginx/nginx.conf"
-  notify:
-    - "check nginx config"
-
 - name: "Ensure streams config directory is loaded correctly"
   lineinfile:
     insertbefore: "^http {$"

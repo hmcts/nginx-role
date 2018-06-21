@@ -80,16 +80,7 @@
       loop_var: docroot
   when: rule.document_root_source is defined and rule.document_root is defined
 
-# We don't fully manage nginx.conf, so molecule tests differ from prod in
-# respect of this line being present/absent. This is primarily for molecule.
-- name: Remove default line that includes all modules.
-  lineinfile:
-    line: "include /usr/share/nginx/modules/*.conf;"
-    state: absent
-    path: "/etc/nginx/nginx.conf"
-  notify:
-    - "check nginx config"
-
+- include: "modules.yml"
 - include: "streams.yml"
 - include: "vault_get_ssl_files.yml"
 - include: "selinux_exceptions.yml"
@@ -102,6 +93,7 @@
   notify:
     - "check nginx config"
     - "check certs"
+  changed_when: false
 
 - name: "Force handlers to run"
   meta: flush_handlers
