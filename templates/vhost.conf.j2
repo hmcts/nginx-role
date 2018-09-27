@@ -5,6 +5,12 @@ server {
   return 301 https://$host$request_uri;
   access_log /var/log/nginx/{{ item.hostname | replace('.', '_') }}_{{ item.port | default('port')}}.access.log main;
   error_log /var/log/nginx/{{ item.hostname | replace('.', '_') }}_{{ item.port | default('port')}}.error.log;
+        location /nginx_status {
+          stub_status on;
+          access_log   off;
+          allow 51.140.77.83;
+          deny all;
+        }  
 }
 {%- endif %}
 
